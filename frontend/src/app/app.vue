@@ -3,7 +3,9 @@ import { RouteLayout } from "./providers";
 </script>
 
 <template>
-  <route-layout>
-    <router-view />
-  </route-layout>
+  <v-app>
+    <route-layout>
+      <router-view />
+    </route-layout>
+  </v-app>
 </template>
