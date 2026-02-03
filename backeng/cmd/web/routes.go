@@ -18,7 +18,8 @@ func(app *application) routes() http.Handler {
 
 
 	mux.HandleFunc("POST /create-room",  app.roomCreatePost)
-    mux.HandleFunc("/ws", handleConnections)
+	mux.HandleFunc("GET /room/{id}", app.roomGet)
+	mux.HandleFunc("/ws", handleConnections)
 
 	return mux
 }

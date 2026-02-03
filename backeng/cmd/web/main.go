@@ -8,12 +8,14 @@ import (
 	"github.com/jackc/pgx"
 	"github.com/joho/godotenv"
 
+	"yacode.malafeev.mikhail/internal/models"
 	"yacode.malafeev.mikhail/internal/pkg/helpers"
 )
 
 
 type application struct{
     logger *slog.Logger
+    rooms *models.RoomModel
 }
 
 
@@ -33,6 +35,7 @@ func main() {
 
     app := &application{
         logger: logger,
+        rooms: &models.RoomModel{DB : db},
     }
 
     logger.Info("WebSocket server started on :8080")
