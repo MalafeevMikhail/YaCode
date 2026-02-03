@@ -7,10 +7,21 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-    CheckOrigin: func(r *http.Request) bool { return true }, // Allow all connections
+func(app *application) roomCreatePost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	name := r.PostForm.Get("name")
+	if name == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
 }
-var clients = make(map[*websocket.Conn]bool) // Track active clients
+
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
     ws, err := upgrader.Upgrade(w, r, nil)
@@ -38,15 +49,5 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
                 delete(clients, client)
             }
         }
-    }
-}
-
-func main() {
-    http.HandleFunc("/ws", handleConnections)
-
-    fmt.Println("WebSocket server started on :8080")
-    err := http.ListenAndServe(":8080", nil)
-    if err != nil {
-        fmt.Println("ListenAndServe:", err)
     }
 }
