@@ -1,29 +1,56 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { YaModal } from "@/shared/components/modal";
+import axios from "axios";
 
 const isLoadingModal = ref(false);
 const isCreateRoomModalVisible = ref(true);
-const userName = ref("");
-function createRoom() {
+const roomName = ref("");
+
+function openCreateModal() {
   isLoadingModal.value = true;
   setTimeout(() => {
     isLoadingModal.value = false;
     isCreateRoomModalVisible.value = true;
   }, 500);
 }
+
+async function createRoom() {
+  if (!roomName.value) return;
+
+  axios
+    .post("/api/create-room", {
+      name: roomName.value,
+    })
+    .then((data) => {
+      if (!("link" in data.data)) {
+        alert("Ошибка!. Проверьте логи");
+        console.error("Отсутствует ссылка в ответе сервера");
+        return;
+      }
+    })
+    .catch((err) => {
+      alert("Ошибка! Проверьте логи.");
+      console.error(err);
+    })
+    .finally(() => {
+      isCreateRoomModalVisible.value = false;
+    });
+}
 </script>
 <template>
   <div class="create-block">
     <h3 class="mb-4">You have to create a room for live coding to begin.</h3>
-    <v-btn :loading="isLoadingModal" @click="createRoom"> Create room </v-btn>
+    <v-btn :loading="isLoadingModal" @click="openCreateModal">
+      Create room
+    </v-btn>
   </div>
 
   <ya-modal v-model="isCreateRoomModalVisible" v-if="isCreateRoomModalVisible">
     <div class="d-flex justify-center align-center flex-column ga-3">
-      <h2>Please, introduce yourself</h2>
-      <input type="text" v-model="userName" />
-      <v-btn :disabled="!userName">Create</v-btn>
+      <h2>Please specify the room name.</h2>
+      <input type="text" v-model="roomName" />
+      <v-btn :disabled="!roomName" @click="createRoom">Create</v-btn>
     </div>
   </ya-modal>
 </template>
