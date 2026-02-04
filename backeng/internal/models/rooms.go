@@ -48,3 +48,21 @@ func(m *RoomModel) Get(id string)(Room, error){
     return room, nil
 
 }
+
+func (m *RoomModel) CheckRoom(id string) (bool, error) {
+    stmt := "SELECT id, name, create_at FROM Rooms WHERE id = $1;"
+
+
+    var room Room
+
+    err := m.DB.QueryRow(stmt, id).Scan(&room.ID, &room.Name, &room.Created)
+
+    if err != nil{
+        if err == pgx.ErrNoRows {
+            return false, ErrNoRecod
+        }
+        return false, err
+    }
+
+    return true, nil
+}
