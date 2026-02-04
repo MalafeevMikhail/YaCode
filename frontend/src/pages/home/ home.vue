@@ -23,11 +23,13 @@ async function createRoom() {
       name: roomName.value,
     })
     .then((data) => {
-      if (!("link" in data.data)) {
+      if (!("id" in data.data)) {
         alert("Ошибка!. Проверьте логи");
         console.error("Отсутствует ссылка в ответе сервера");
         return;
       }
+
+      window.location.href = `room/${data.data.id}`;
     })
     .catch((err) => {
       alert("Ошибка! Проверьте логи.");

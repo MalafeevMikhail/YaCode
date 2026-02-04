@@ -3,4 +3,8 @@ export const ROUTES = {
     name: "home",
     path: "/",
   },
+  ROOM: {
+    name: "room",
+    path: "/room/:roomId",
+  },
 };

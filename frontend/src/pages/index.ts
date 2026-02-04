@@ -5,9 +5,15 @@ export const routes: RouteRecordRaw[] = [
   {
     path: ROUTES.HOME.path,
     meta: {
-      auth: false,
       layout: "base",
     },
     component: () => import("./home"),
+  },
+  {
+    path: ROUTES.ROOM.path,
+    meta: {
+      layout: "base",
+    },
+    component: () => import("./room"),
   },
 ];
