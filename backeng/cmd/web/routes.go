@@ -17,9 +17,9 @@ func(app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 
 
-	mux.HandleFunc("POST /create-room",  app.roomCreatePost)
-	mux.HandleFunc("GET /room/{id}", app.roomGet)
+	mux.HandleFunc("POST /api/create-room",  app.roomCreatePost)
+	mux.HandleFunc("GET /api/room/{id}", app.roomGet)
 	mux.HandleFunc("/ws", handleConnections)
 
-	return mux
+	return enableCORS(mux)
 }

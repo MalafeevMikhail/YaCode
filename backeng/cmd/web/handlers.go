@@ -12,18 +12,32 @@ import (
 )
 
 func(app *application) roomCreatePost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
+    var requestData struct {
+        Name string `json:"name"`
+    }
 
-	name := r.PostForm.Get("name")
+    decoder := json.NewDecoder(r.Body)
+    if err := decoder.Decode(&requestData); err != nil {
+        app.clientError(w, http.StatusBadRequest)
+        return
+    }
+    
+    name := requestData.Name
 	if name == "" {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
+    link, err := app.rooms.Create(name)
+    if err != nil {
+        app.serverError(w, r, err)
+    }
+
+    response := map[string]string{
+        "link": link,
+    }
+    
+    json.NewEncoder(w).Encode(response)
 }
 
 func(app *application) roomGet(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +47,6 @@ func(app *application) roomGet(w http.ResponseWriter, r *http.Request) {
         http.NotFound(w,r)
         return
     }
-
 
     if err := uuid.Validate(id); err != nil {
         app.clientError(w, http.StatusBadRequest)
