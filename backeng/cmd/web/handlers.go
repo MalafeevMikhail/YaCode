@@ -40,44 +40,6 @@ func(app *application) roomCreatePost(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(response)
 }
 
-func (app *application) checkRoomPost(w http.ResponseWriter, r *http.Request) {
-    var requestData struct {
-        RoomId string `json:"roomId"`
-    }
-    decoder := json.NewDecoder(r.Body)
-    if err := decoder.Decode(&requestData); err != nil {
-        app.clientError(w, http.StatusBadRequest)
-        return
-    }
-
-    id := requestData.RoomId
-    if id == "" {
-        app.clientError(w, http.StatusBadRequest)
-        return
-    }
-
-    if err := uuid.Validate(id); err != nil {
-        app.clientError(w, http.StatusBadRequest)
-        return
-    }
-    response := map[string]bool{
-        "isValid" : false,
-    }
-    isValid, err := app.rooms.CheckRoom(id)
-    if err != nil {
-        if errors.Is(err, models.ErrNoRecod){
-            response["isValid"]= false
-        }else{
-            app.serverError(w, r, err)
-            return
-        }
-    }else{
-        response["isValid"] = isValid
-    }
-    
-    json.NewEncoder(w).Encode(response)
-}
-
 
 func(app *application) roomGet(w http.ResponseWriter, r *http.Request) {
     id := r.PathValue("id")

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/pgtype"
 )
 
 
@@ -11,6 +12,8 @@ type Room struct {
 	ID string
 	Name string
 	Created time.Time
+    Code string  
+    Language string
 }
 
 type RoomModel struct{
@@ -18,11 +21,11 @@ type RoomModel struct{
 }
 
 func(m *RoomModel) Create(name string)(string, error){
-    stmt := `INSERT INTO Rooms(name) VALUES($1) RETURNING id;`
+    stmt := `INSERT INTO Rooms(name, language) VALUES($1, $2) RETURNING id;`
 
     var id string
 
-    err := m.DB.QueryRow(stmt, name).Scan(&id)
+    err := m.DB.QueryRow(stmt, name, "go").Scan(&id)
 
     if err != nil {
         return "", err
@@ -32,11 +35,12 @@ func(m *RoomModel) Create(name string)(string, error){
 }
 
 func(m *RoomModel) Get(id string)(Room, error){
-    stmt := `SELECT id, name, create_at FROM Rooms WHERE id = $1;`
+    stmt := `SELECT id, name, create_at, code, language FROM Rooms WHERE id = $1;`
     
     var room Room
-    
-    err := m.DB.QueryRow(stmt, id).Scan(&room.ID, &room.Name, &room.Created)
+    var code pgtype.Varchar
+
+    err := m.DB.QueryRow(stmt, id).Scan(&room.ID, &room.Name, &room.Created, &code, &room.Language)
     
     if err != nil {
         if err == pgx.ErrNoRows {
@@ -45,24 +49,10 @@ func(m *RoomModel) Get(id string)(Room, error){
         return Room{}, err
     }
     
+    if code.Status == pgtype.Present{
+        room.Code = code.String
+    }
+    
     return room, nil
 
-}
-
-func (m *RoomModel) CheckRoom(id string) (bool, error) {
-    stmt := "SELECT id, name, create_at FROM Rooms WHERE id = $1;"
-
-
-    var room Room
-
-    err := m.DB.QueryRow(stmt, id).Scan(&room.ID, &room.Name, &room.Created)
-
-    if err != nil{
-        if err == pgx.ErrNoRows {
-            return false, ErrNoRecod
-        }
-        return false, err
-    }
-
-    return true, nil
 }

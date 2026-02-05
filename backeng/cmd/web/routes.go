@@ -18,7 +18,6 @@ func(app *application) routes() http.Handler {
 
 
 	mux.HandleFunc("POST /api/create-room",  app.roomCreatePost)
-	mux.HandleFunc("POST /api/check-room",  app.checkRoomPost)
 	mux.HandleFunc("GET /api/room/{id}", app.roomGet)
 	mux.HandleFunc("/ws", handleConnections)
 
