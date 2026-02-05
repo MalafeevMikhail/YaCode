@@ -18,6 +18,10 @@ const codeEditor = ref<HTMLTextAreaElement>();
 const codeDisplay = ref<HTMLElement>();
 const currentLanguage = ref("javascript");
 const codeContent = ref();
+const loading = ref(true);
+const roomObject = ref();
+const loadedContent = ref();
+const loadedLanguage = ref();
 
 const highlightCode = () => {
   if (!codeDisplay.value) return;
@@ -26,7 +30,6 @@ const highlightCode = () => {
     const highlighted = hljs.highlight(codeContent.value, {
       language: currentLanguage.value,
     }).value;
-
     codeDisplay.value.innerHTML = highlighted;
   } catch (e) {
     codeDisplay.value.textContent = codeContent.value;
@@ -74,19 +77,21 @@ const checkRoomId = () => {
   if (!roomId) window.location.replace("/");
 
   axios
-    .post("/api/check-room", {
-      roomId: String(roomId.value),
-    })
+    .get(`/api/room/${roomId.value}`)
     .then((data) => {
-      if (!("isValid" in data.data)) {
-        window.location.replace("/");
-        return;
+      roomObject.value = data.data;
+      if ("Language" in data.data) {
+        loadedLanguage.value = data.data.Language;
       }
-
-      if (!data.data.isValid) window.location.replace("/");
+      if ("Code" in data.data) {
+        loadedContent.value = data.data.Code;
+      }
     })
     .catch(() => {
       window.location.replace("/");
+    })
+    .finally(() => {
+      loading.value = false;
     });
 };
 
@@ -109,10 +114,22 @@ watch(currentLanguage, () => {
 watch(codeContent, () => {
   highlightCode();
 });
+
+watch(loading, (value) => {
+  if (!value) {
+    nextTick(() => {
+      currentLanguage.value = loadedLanguage.value ?? "";
+      codeContent.value = loadedContent.value ?? "";
+    });
+  }
+});
 </script>
 
 <template>
-  <div class="container">
+  <div v-if="loading" class="simple-loader">
+    <div class="spinner"></div>
+  </div>
+  <div v-else class="container">
     <div class="header">
       <div class="title">
         <span class="title-icon">◉</span>
@@ -447,6 +464,30 @@ body {
   .code-display {
     font-size: 13px;
     padding: 15px;
+  }
+}
+
+.simple-loader {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  display: grid;
+  place-items: center;
+  z-index: 9999;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>
