@@ -2,16 +2,74 @@
 import axios from "axios";
 import { useRoute } from "vue-router";
 import { useToString, useClipboard } from "@vueuse/core";
-
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref, watch, nextTick } from "vue";
+import hljs from "highlight.js";
+import "highlight.js/styles/github-dark.css";
 
 const route = useRoute();
-const { text, copy, copied, isSupported } = useClipboard();
+const { copy } = useClipboard();
 
 const roomId = useToString(() => route.params.roomId as string);
 const url = computed(() => {
   return window.location.href;
 });
+
+const codeEditor = ref<HTMLTextAreaElement>();
+const codeDisplay = ref<HTMLElement>();
+const currentLanguage = ref("javascript");
+const codeContent = ref();
+
+const highlightCode = () => {
+  if (!codeDisplay.value) return;
+
+  try {
+    const highlighted = hljs.highlight(codeContent.value, {
+      language: currentLanguage.value,
+    }).value;
+
+    codeDisplay.value.innerHTML = highlighted;
+  } catch (e) {
+    codeDisplay.value.textContent = codeContent.value;
+  }
+};
+
+const handleInput = () => {
+  if (codeEditor.value) {
+    codeContent.value = codeEditor.value.value;
+    highlightCode();
+  }
+};
+
+const handleScroll = () => {
+  if (codeEditor.value && codeDisplay.value) {
+    codeDisplay.value.scrollTop = codeEditor.value.scrollTop;
+    codeDisplay.value.scrollLeft = codeEditor.value.scrollLeft;
+  }
+};
+
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+
+    if (codeEditor.value) {
+      const start = codeEditor.value.selectionStart;
+      const end = codeEditor.value.selectionEnd;
+
+      const newText =
+        codeEditor.value.value.substring(0, start) +
+        "  " +
+        codeEditor.value.value.substring(end);
+
+      codeEditor.value.value = newText;
+      codeEditor.value.selectionStart = codeEditor.value.selectionEnd =
+        start + 2;
+
+      codeContent.value = newText;
+      highlightCode();
+    }
+  }
+};
+
 const checkRoomId = () => {
   if (!roomId) window.location.replace("/");
 
@@ -34,8 +92,25 @@ const checkRoomId = () => {
 
 onMounted(() => {
   checkRoomId();
+
+  nextTick(() => {
+    highlightCode();
+
+    if (codeEditor.value) {
+      codeEditor.value.value = codeContent.value;
+    }
+  });
+});
+
+watch(currentLanguage, () => {
+  highlightCode();
+});
+
+watch(codeContent, () => {
+  highlightCode();
 });
 </script>
+
 <template>
   <div class="container">
     <div class="header">
@@ -44,7 +119,7 @@ onMounted(() => {
         <span>YaCode</span>
       </div>
       <div class="controls">
-        <select class="language-select">
+        <select class="language-select" v-model="currentLanguage">
           <option value="javascript">JavaScript</option>
           <option value="python">Python</option>
           <option value="java">Java</option>
@@ -81,9 +156,39 @@ onMounted(() => {
         <div class="editor-dot red"></div>
         <div class="editor-dot yellow"></div>
         <div class="editor-dot green"></div>
-        <div class="editor-title">main.js</div>
+        <div class="editor-title">
+          {{
+            currentLanguage === "javascript"
+              ? "main.js"
+              : currentLanguage === "python"
+              ? "main.py"
+              : currentLanguage === "java"
+              ? "Main.java"
+              : currentLanguage === "cpp"
+              ? "main.cpp"
+              : currentLanguage === "html"
+              ? "index.html"
+              : currentLanguage === "css"
+              ? "style.css"
+              : `main.${currentLanguage}`
+          }}
+        </div>
       </div>
-      <div class="code-area" id="codeEditor" placeholder=""></div>
+      <div class="editor-container">
+        <textarea
+          ref="codeEditor"
+          class="code-input"
+          :value="codeContent"
+          @input="handleInput"
+          @scroll="handleScroll"
+          @keydown="handleKeydown"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          autocorrect="off"
+        ></textarea>
+        <pre ref="codeDisplay" class="code-display hljs"></pre>
+      </div>
     </div>
 
     <div class="footer">
@@ -91,6 +196,7 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
 <style lang="scss" scoped>
 * {
   margin: 0;
@@ -258,25 +364,54 @@ body {
   margin-left: 10px;
 }
 
-.code-area {
+.editor-container {
+  position: relative;
   width: 100%;
   height: calc(100% - 50px);
+}
+
+.code-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: transparent;
-  color: #d4d4d4;
-  font-family: "Courier New", monospace;
-  font-size: 16px;
-  line-height: 1.6;
-  padding: 25px;
+  color: transparent;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 20px;
   border: none;
   resize: none;
   outline: none;
-  white-space: pre;
   overflow: auto;
+  caret-color: #fff;
+  z-index: 2;
+  tab-size: 2;
+  white-space: pre;
+
+  &::selection {
+    background: rgba(101, 115, 255, 0.5);
+  }
 }
 
-.code-area::placeholder {
-  color: #666;
-  font-style: italic;
+.code-display {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 20px;
+  background: transparent;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: auto;
+  pointer-events: none;
+  z-index: 1;
+  white-space: pre;
 }
 
 .footer {
@@ -304,8 +439,14 @@ body {
   }
 
   .code-editor {
-    height: 400px;
+    height: 500px;
     margin: 10px;
+  }
+
+  .code-input,
+  .code-display {
+    font-size: 13px;
+    padding: 15px;
   }
 }
 </style>
